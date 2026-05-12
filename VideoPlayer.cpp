@@ -68,8 +68,10 @@ int main(int argc, char** argv) {
     int width = mode->width;
     int height = mode->height;
 
-    GLFWwindow* window = glfwCreateWindow(width, height, "VideoPlayer", NULL, NULL);
+   // glfwWindowHint(GLFW_MAXIMIZED, true);
 
+    GLFWwindow* window = glfwCreateWindow(width, height, "VideoPlayer", NULL, NULL);
+    
     glfwMakeContextCurrent(window);
 
     if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress))
@@ -121,6 +123,13 @@ int main(int argc, char** argv) {
       return -1;
     }
 
+    glfwSetWindowSize(window, cc->width, cc->height);
+    std::cout<<"W: "<<cc->width;
+
+    int tmp[2];
+    glfwGetWindowSize(window, tmp, tmp+1);
+    //std::cout<<"x: "<<tmp[0]<<"\t"<<"y: "<<tmp[1];
+
     AVPacket* packet = av_packet_alloc();
     AVFrame* frame = av_frame_alloc();
 
@@ -153,7 +162,6 @@ int main(int argc, char** argv) {
             int ret = avcodec_receive_frame(cc, frame);
 
             if (ret == 0) {
-                std::cout << "Frame decoded: "<< frame->width << "x"<< frame->height << "\n";
 
                 //vizatim
               if(!(frame->format == AV_PIX_FMT_YUV420P))
