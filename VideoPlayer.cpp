@@ -20,6 +20,12 @@ unsigned int indecies[]{
   0,1,2,
   2,3,0
 };
+bool running(GLFWwindow* window)
+{
+  if(glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
+    return false;
+  return true;
+}
 void initTex( GLuint* tex, int tex_type = GL_TEXTURE0, int width = 0, int height = 0, int type = GL_UNSIGNED_BYTE){
   glGenTextures(1, tex);
   glActiveTexture(tex_type);
@@ -80,7 +86,7 @@ int main(int argc, char** argv) {
       return -1;
     }
     
-    glViewport(0, 0, width, height);
+    
 
     GLuint vbo, vao, ebo;
     init(&vbo, &vao, &ebo);
@@ -123,12 +129,16 @@ int main(int argc, char** argv) {
       return -1;
     }
 
+    glViewport(0, 0, cc->width, cc->height);
+
     glfwSetWindowSize(window, cc->width, cc->height);
     std::cout<<"W: "<<cc->width;
 
     int tmp[2];
     glfwGetWindowSize(window, tmp, tmp+1);
     //std::cout<<"x: "<<tmp[0]<<"\t"<<"y: "<<tmp[1];
+    glfwSetWindowPos(window, (width/2)-(tmp[0]/2), (height/2)-(tmp[1]/2));
+    std::cout<<"\npos: "<<(tmp[1]/2);
 
     AVPacket* packet = av_packet_alloc();
     AVFrame* frame = av_frame_alloc();
@@ -151,7 +161,7 @@ int main(int argc, char** argv) {
 
     glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
 
-    while(av_read_frame(fc, packet) >= 0){
+    while((av_read_frame(fc, packet) >= 0) && running(window)){
       if(packet->stream_index == index){
         if(avcodec_send_packet(cc, packet)<0){
           std::cerr<<"Gabim ne dergimin e paketave!";
