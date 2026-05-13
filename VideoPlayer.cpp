@@ -5,6 +5,10 @@
 #include <string>
 #include <GLFW/glfw3.h>
 #include "include/Shader.h"
+/*
+int* a;
+cin>>a
+*/
 
 extern "C" {
   #include <libavformat/avformat.h>
@@ -61,9 +65,15 @@ void init(GLuint *vbo, GLuint *vao, GLuint *ebo)
 
 int main(int argc, char** argv) {
 
+    char* tmp_file;
     if(argc < 2 || argc > 3){
       std::cerr<<"Gabim ne shkrimin  e arg!";
-      return -1;
+      std::cout<<"Shkruaj emrin e file .mp4"<<std::endl;
+      std::cin>>tmp_file;
+    }
+    else
+    {
+      tmp_file = *(argv+1);
     }
     if(!glfwInit()){
       std::cerr<<"Gabim ne inicializim glfw";
@@ -93,7 +103,7 @@ int main(int argc, char** argv) {
 
     AVFormatContext* fc = nullptr;
 
-    if(avformat_open_input(&fc, *(argv+1), nullptr, nullptr) != 0){
+    if(avformat_open_input(&fc, tmp_file, nullptr, nullptr) != 0){
       std::cerr<<"Gabim ne hapjen e file!";
       return -1;
     }
