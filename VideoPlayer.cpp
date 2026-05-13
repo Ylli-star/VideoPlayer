@@ -5,10 +5,9 @@
 #include <string>
 #include <GLFW/glfw3.h>
 #include "include/Shader.h"
-/*
-int* a;
-cin>>a
-*/
+#include <thread>
+#include <chrono>
+#define PI 3.1416
 
 extern "C" {
   #include <libavformat/avformat.h>
@@ -24,12 +23,21 @@ unsigned int indecies[]{
   0,1,2,
   2,3,0
 };
+
+float mat[]
+{
+  cosf(PI), -sinf(PI), 0.0f, 0.0f,
+  sinf(PI), cosf(PI), 0.0f, 0.0f,
+  0.0f, 0.0f, 1.0f, 0.0f,
+  0.0f, 0.0f, 0.0f, 1.0f
+};
 bool running(GLFWwindow* window)
 {
   if(glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
     return false;
   return true;
 }
+
 void initTex( GLuint* tex, int tex_type = GL_TEXTURE0, int width = 0, int height = 0, int type = GL_UNSIGNED_BYTE){
   glGenTextures(1, tex);
   glActiveTexture(tex_type);
@@ -122,6 +130,10 @@ int main(int argc, char** argv) {
         break;
       }
     }
+    AVStream* Stream = fc->streams[index];
+
+    double time_f = 1.0 / (av_q2d(Stream->avg_frame_rate));
+
     if(index == -1){
       std::cerr<<"Nuk u gjet video!";
       return -1;
@@ -140,15 +152,16 @@ int main(int argc, char** argv) {
     }
 
     glViewport(0, 0, cc->width, cc->height);
-
     glfwSetWindowSize(window, cc->width, cc->height);
-    std::cout<<"W: "<<cc->width;
-
     int tmp[2];
     glfwGetWindowSize(window, tmp, tmp+1);
-    //std::cout<<"x: "<<tmp[0]<<"\t"<<"y: "<<tmp[1];
+    std::cout<<"x: "<<tmp[0]<<"\t"<<"y: "<<tmp[1];
     glfwSetWindowPos(window, (width/2)-(tmp[0]/2), (height/2)-(tmp[1]/2));
-    std::cout<<"\npos: "<<(tmp[1]/2);
+    std::cout<<"\npos: "<<(width/2)-(tmp[0]/2);
+    
+    //nqs behet maximize:
+    //glViewport((width/2)-(tmp[0]/2), (height/2)-(tmp[1]/2), cc->width, cc->height);
+
 
     AVPacket* packet = av_packet_alloc();
     AVFrame* frame = av_frame_alloc();
@@ -156,6 +169,10 @@ int main(int argc, char** argv) {
     GLuint vertex, fragment;
 
     Shader sh(&vertex, &fragment, "include/vertex.vert", "include/fragment.frag");
+    sh.useProgram();
+
+    int mat_loc = glGetUniformLocation(sh.programId, "rotation");
+    glUniformMatrix4fv(mat_loc, 1, GL_FALSE, mat);
 
     GLuint tex[3];
     
@@ -163,13 +180,16 @@ int main(int argc, char** argv) {
     initTex(&tex[1], GL_TEXTURE1, cc->width/2, cc->height/2, GL_UNSIGNED_BYTE);
     initTex(&tex[2], GL_TEXTURE2, cc->width/2, cc->height/2, GL_UNSIGNED_BYTE);
 
-    sh.useProgram();
+    
     
     glUniform1i(glGetUniformLocation(sh.programId, "yvalue"), 0);
     glUniform1i(glGetUniformLocation(sh.programId, "uvalue"), 1);
     glUniform1i(glGetUniformLocation(sh.programId, "vvalue"), 2);
 
     glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
+
+    double actual_time = glfwGetTime();
+    double last_time = actual_time;
 
     while((av_read_frame(fc, packet) >= 0) && running(window)){
       if(packet->stream_index == index){
@@ -182,8 +202,18 @@ int main(int argc, char** argv) {
             int ret = avcodec_receive_frame(cc, frame);
 
             if (ret == 0) {
-
+              actual_time = glfwGetTime();
+                double elapsed_time = actual_time - last_time;
                 //vizatim
+                if(elapsed_time < time_f)
+                {
+                  double sleep_time = time_f - elapsed_time;
+                  
+                  std::this_thread::sleep_for(std::chrono::duration<double>(sleep_time));
+                }
+                last_time = glfwGetTime();
+              
+              //if(actual_time)
               if(!(frame->format == AV_PIX_FMT_YUV420P))
                 continue;
               glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
